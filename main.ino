@@ -128,14 +128,22 @@ void TaskMaquinaEstados(void *pvParameters) {
 
         switch (estadoAtual) {
           case TELA_INICIAL:
-            if (joystick.movimentos[4]) {
-              proximoEstado = MENU;
-              estadoAtual = LIMPA_TELA;
-            }
-            joystick.resetaMovimentos();
+            if (xMutexMovimentos != NULL && xSemaphoreTake(xMutexMovimentos, portMAX_DELAY) == pdTRUE) {
+              if (joystick.movimentos[4]) {
+                proximoEstado = MENU;
+                estadoAtual = LIMPA_TELA;
+              }
 
-            relogio.exibirRelogio();
-            alarme.exibirAlarme(1);
+              joystick.resetaMovimentos();
+              xSemaphoreGive(xMutexMovimentos);
+            }
+
+            if(estadoAtual == TELA_INICIAL){
+              relogio.exibirRelogio();
+              alarme.exibirAlarme(1);
+
+            }
+            
             break;
 
           case MENU:
