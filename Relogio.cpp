@@ -10,42 +10,36 @@ extern Buzzer buzzer;
 Relogio::Relogio(){}
 
 void Relogio::contarTempo(void){
-  contador += 1;
+  // incrementa segundo
+  segundo++;
 
-  // a cada 1000ms
-  if(contador == 1000){
-    // atualiza o segundo
-    segundo++;
-    contador = 0;
+  if(segundo == 60){
+    // atualiza o minuto
+    minuto++;
+    segundo = 0;
 
-    // a cada 1 segundo
-    if(segundo == 60){
-      // atualiza o minuto
-      minuto++;
-      segundo = 0;
+    // a cada 60 minutos
+    if(minuto == 60){
+      // atualiza a hora
+      hora++;
+      minuto = 0;
 
-      // a cada 60 minutos
-      if(minuto == 60){
-        // atualiza a hora
-        hora++;
-        minuto = 0;
-
-        if(hora == 24){
-            hora = 0;
-        }
+      if(hora == 24){
+          hora = 0;
       }
     }
 
-    // atualiza o horário e verifica se o relógio e o alarme coincidem
-    atualizarHorario();
-    buzzer.monitorarAlarme();
   }
+  
+  // atualiza o horário e verifica se o relógio e o alarme coincidem
+  atualizarHorario();
+  buzzer.monitorarAlarme();
 }
 
 void Relogio::atualizarHorario(void){
   // limpa horário atual
   horario = "";
-  
+
   // para todos os dígitos menores do que 10, adiciona 0 à esquerda e concatena com a nova string do horário, separando os componentes do relógio com ":"
   if(hora < 10){
     horario.concat('0');

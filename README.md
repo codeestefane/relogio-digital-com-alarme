@@ -2,17 +2,20 @@
 
 Projeto de sistemas embarcados que implementa um relógio digital configurável com alarme, usando um Arduino, um display LCD 16×2 e um joystick. A interface permite ajustar o horário e o alarme; quando os horários coincidem, um buzzer toca até que o botão do joystick seja pressionado.
 
+O projeto usa FreeRTOS para dividir as tarefas de atualização do relógio, leitura do joystick e controle da interface.
+
 ## Funcionalidades
 
 - Exibe o horário e o alarme no LCD.
 - Permite configurar o horário e o alarme pelo joystick.
 - Oferece opções para salvar ou descartar as alterações.
 - Aciona um alarme sonoro e visual quando o horário configurado é atingido.
-- Usa interrupções dos timers para atualizar o relógio e ler o joystick.
+- Executa a atualização do tempo, leitura do joystick e interface em tarefas separadas com FreeRTOS.
+- Protege o LCD, o estado da máquina e os movimentos do joystick com mutexes.
 
 ## Hardware
 
-O código usa os timers 1 e 3 e seus registradores diretamente. Use uma placa Arduino compatível com esses recursos, como a **Arduino Mega 2560**. A configuração abaixo corresponde aos pinos definidos no código:
+Use uma placa Arduino compatível com [Arduino_FreeRTOS](https://github.com/feilipu/Arduino_FreeRTOS_Library), como a **Arduino Mega 2560**. A configuração abaixo corresponde aos pinos definidos no código:
 
 | Componente | Pino do Arduino |
 | --- | --- |
@@ -34,16 +37,18 @@ O botão do joystick usa `INPUT_PULLUP`; conecte-o entre o pino 7 e o GND. Faça
 ### Requisitos
 
 - Arduino IDE.
-- Placa Arduino Mega 2560 ou outra placa compatível com os timers 1 e 3 e com os registradores usados pelo projeto.
+- Placa Arduino Mega 2560 ou outra placa compatível com Arduino_FreeRTOS.
+- Biblioteca **Arduino_FreeRTOS**.
 - Biblioteca `LiquidCrystal` (normalmente incluída com o Arduino IDE).
 - `EEPROM` e `Arduino.h`, fornecidos pelo core Arduino.
 
 ### Compilar e carregar
 
-1. Abra `main.ino` no Arduino IDE.
-2. Selecione a placa compatível (por exemplo, **Arduino Mega or Mega 2560**) e a porta serial correta.
-3. Confira as conexões da tabela acima.
-4. Compile e carregue o sketch.
+1. Instale a biblioteca Arduino_FreeRTOS na Arduino IDE.
+2. Abra [`main.ino`](main.ino).
+3. Selecione a placa compatível (por exemplo, **Arduino Mega or Mega 2560**) e a porta serial correta.
+4. Confira as conexões da tabela acima.
+5. Compile e carregue o sketch.
 
 O relógio começa com o horário de compilação do programa. Depois de ligado, o joystick controla os menus:
 
@@ -55,17 +60,17 @@ O relógio começa com o horário de compilação do programa. Depois de ligado,
 
 ## Estrutura do projeto
 
-- `main.ino`: inicialização do hardware, máquina de estados e interrupções.
-- `Relogio.h` / `Relogio.cpp`: contagem e exibição do horário.
-- `Alarme.h` / `Alarme.cpp`: armazenamento em memória do horário do alarme e exibição.
-- `JoyStick.h` / `JoyStick.cpp`: leitura dos eixos e do botão.
-- `Menu.h` / `Menu.cpp`: navegação e confirmação das opções.
-- `Configuracao.h` / `Configuracao.cpp`: edição dos dígitos de horário e alarme.
-- `Buzzer.h` / `Buzzer.cpp`: monitoramento do horário do alarme e sinalização sonora/visual.
-- `MaquinaEstados.h`: estados da interface.
+- [`main.ino`](main.ino): inicialização, criação das tarefas FreeRTOS e máquina de estados.
+- [`Relogio.h`](Relogio.h) / [`Relogio.cpp`](Relogio.cpp): contagem e exibição do horário.
+- [`Alarme.h`](Alarme.h) / [`Alarme.cpp`](Alarme.cpp): armazenamento do horário do alarme e exibição.
+- [`JoyStick.h`](JoyStick.h) / [`JoyStick.cpp`](JoyStick.cpp): leitura dos eixos e do botão.
+- [`Menu.h`](Menu.h) / [`Menu.cpp`](Menu.cpp): navegação e confirmação das opções.
+- [`Configuracao.h`](Configuracao.h) / [`Configuracao.cpp`](Configuracao.cpp): edição dos dígitos de horário e alarme.
+- [`Buzzer.h`](Buzzer.h) / [`Buzzer.cpp`](Buzzer.cpp): monitoramento do horário do alarme e sinalização sonora/visual.
+- [`MaquinaEstados.h`](MaquinaEstados.h): estados da interface.
 
 ## Observações
 
-- O projeto não usa módulo RTC: o horário é inicializado com o momento em que o sketch foi compilado e é contado pelos timers. Ele não é mantido com precisão quando a placa fica desligada.
+- O projeto não usa atualmente um módulo RTC: o horário é inicializado com o momento em que o sketch foi compilado e é atualizado pela tarefa FreeRTOS a cada segundo.
 - O horário e o alarme configurados ficam em memória durante a execução; as alterações não são persistidas após reiniciar ou desligar a placa.
 - O texto dos menus exibido no LCD está em inglês.

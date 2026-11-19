@@ -12,7 +12,6 @@ void JoyStick::lerJoyStickEixoY(){
 
   } else if(valorYAtual < 200 && valorYAnterior > 200){
     movimentos[3] = 1;
-
   }
 
   valorYAnterior = valorYAtual;
@@ -44,8 +43,8 @@ void JoyStick::lerJoyStickEixoX(){
 void JoyStick::lerBotaoJoyStick(){
     debouncing++;
 
-    // a cada 50ms
-    if(debouncing == 50){
+    // a cada 60ms
+    if(debouncing == 2){
       debouncing = 0;
       // lê o valor do pino conectado ao botão do joystick
       valorZAtual = !digitalRead(pinZ);

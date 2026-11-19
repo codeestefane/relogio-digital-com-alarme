@@ -4,11 +4,16 @@
 #include "JoyStick.h";
 #include <LiquidCrystal.h>
 
+#include <Arduino_FreeRTOS.h>
+#include <semphr.h>
+
 // importa componentes utilizados por referência
 extern LiquidCrystal lcd;
 extern Estados estadoAtual;
 extern Estados proximoEstado;
 extern JoyStick joystick;
+
+extern SemaphoreHandle_t xMutexMovimentos;
 
 Configuracao::Configuracao(){}
 
@@ -33,6 +38,7 @@ void Configuracao::exibirConfiguracao(int linha){
 }
 
 void Configuracao::analisaMovimentos(void){
+  if (xMutexMovimentos != NULL && xSemaphoreTake(xMutexMovimentos, portMAX_DELAY) == pdTRUE) {
     // se o botão do joystick foi pressionado
     if(joystick.movimentos[4]){
         // limpa a tela e muda para a tela de confirmação
@@ -135,7 +141,10 @@ void Configuracao::analisaMovimentos(void){
         proximoEstado = CONFIGURACAO;
     }
   
-  // limpa todos os movimentos do joystick para evitar interferências
-  joystick.resetaMovimentos();
+    // limpa todos os movimentos do joystick para evitar interferências
+    joystick.resetaMovimentos();
+    xSemaphoreGive(xMutexMovimentos);
+
+  }
 
 }

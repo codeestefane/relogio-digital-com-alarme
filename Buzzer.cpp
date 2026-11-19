@@ -7,6 +7,9 @@
 
 #include <LiquidCrystal.h>
 
+#include <Arduino_FreeRTOS.h>
+#include <semphr.h>
+
 // componentes importados por referência
 extern LiquidCrystal lcd;
 extern Estados estadoAtual;
@@ -17,12 +20,20 @@ extern JoyStick joystick;
 
 Buzzer::Buzzer(){}
 
-void Buzzer::monitorarAlarme(void){
-  // se o horário do relógio for igual ao horário do alarme
-  if(relogio.horario == alarme.alarme){
-    // limpa a tela atual e muda para a tela de alarme
-    estadoAtual = LIMPA_TELA;
-    proximoEstado = ALARME;
+extern SemaphoreHandle_t xMutexEstado;
+extern SemaphoreHandle_t xMutexMovimentos;
+
+void Buzzer::monitorarAlarme(void) {
+  // verifica se o horário do relógio bateu com o do alarme
+  if (relogio.horario == alarme.alarme) {
+    
+    // solicita acesso exclusivo às variáveis de estado antes de modificá-las
+    if (xMutexEstado != NULL && xSemaphoreTake(xMutexEstado, portMAX_DELAY) == pdTRUE) {
+      estadoAtual = LIMPA_TELA;
+      proximoEstado = ALARME;
+
+      xSemaphoreGive(xMutexEstado);
+    }
   }
 }
 
@@ -63,14 +74,17 @@ void Buzzer::exibirMensagem(void){
 
 void Buzzer::analisaMovimentos(void){
   // se o botão do joystick foi acionado enquanto o alarme está ligado
-  if(joystick.movimentos[4]){
-    // limpa a tela, volta para a tela inicial e desliga o alarme (buzzer)
-    estadoAtual = LIMPA_TELA;
-    proximoEstado = TELA_INICIAL;
-    noTone(pinBuzzer);
-  }
+  if (xMutexMovimentos != NULL && xSemaphoreTake(xMutexMovimentos, portMAX_DELAY) == pdTRUE) {
+    if(joystick.movimentos[4]){
+      // limpa a tela, volta para a tela inicial e desliga o alarme (buzzer)
+      estadoAtual = LIMPA_TELA;
+      proximoEstado = TELA_INICIAL;
+      noTone(pinBuzzer);
+    }
 
-  // reseta todos os movimentos detectados do joystick para evitar interferência
-  joystick.resetaMovimentos();
+    // reseta todos os movimentos detectados do joystick para evitar interferência
+    joystick.resetaMovimentos();
+    xSemaphoreGive(xMutexMovimentos);
+  }
 }
 
